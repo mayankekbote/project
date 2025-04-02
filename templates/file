@@ -1,0 +1,141 @@
+ <script>
+        let dailyBudget = 0;
+        let totalExpenses = 0;
+        let savings = 0;
+        let expenseCategories = { Food: 0, Clothing: 0, Travelling: 0, Miscellaneous: 0 };
+        let savingsChart;
+
+        // Expense type colors
+        const categoryColors = {
+            "Food": "#ff6384",       // Red
+            "Clothing": "#36a2eb",   // Blue
+            "Travelling": "#ffce56", // Yellow
+            "Miscellaneous": "#4bc0c0" // Teal
+        };
+
+        // Load saved data from localStorage
+        function loadSavedData() {
+            const savedBudget = localStorage.getItem("dailyBudget");
+            const savedExpenses = localStorage.getItem("totalExpenses");
+            const savedCategories = localStorage.getItem("expenseCategories");
+
+            if (savedBudget) {
+                dailyBudget = parseFloat(savedBudget);
+                document.getElementById("budget-value").innerText = dailyBudget.toFixed(2);
+            }
+
+            if (savedExpenses) {
+                totalExpenses = parseFloat(savedExpenses);
+                document.getElementById("total-expenses").innerText = totalExpenses.toFixed(2);
+            }
+
+            if (savedCategories) {
+                expenseCategories = JSON.parse(savedCategories);
+            }
+
+            savings = dailyBudget - totalExpenses;
+            document.getElementById("savings-value").innerText = savings.toFixed(2);
+        }
+
+        // Save data to localStorage
+        function saveData() {
+            localStorage.setItem("dailyBudget", dailyBudget);
+            localStorage.setItem("totalExpenses", totalExpenses);
+            localStorage.setItem("expenseCategories", JSON.stringify(expenseCategories));
+        }
+
+        // Initialize Pie Chart
+        function createChart() {
+            const ctx = document.getElementById("savingsChart").getContext("2d");
+            savingsChart = new Chart(ctx, {
+                type: "pie",
+                data: {
+                    labels: ["Savings", "Food", "Clothing", "Travelling", "Miscellaneous"],
+                    datasets: [{
+                        data: [savings, expenseCategories.Food, expenseCategories.Clothing, expenseCategories.Travelling, expenseCategories.Miscellaneous],
+                        backgroundColor: ["#28a745", categoryColors.Food, categoryColors.Clothing, categoryColors.Travelling, categoryColors.Miscellaneous]
+                    }]
+                }
+            });
+        }
+
+        // Update Chart
+        function updateChart() {
+            savingsChart.data.datasets[0].data = [savings, expenseCategories.Food, expenseCategories.Clothing, expenseCategories.Travelling, expenseCategories.Miscellaneous];
+            savingsChart.update();
+        }
+
+        // Set Budget
+        function setBudget() {
+            dailyBudget = parseFloat(document.getElementById("daily-budget").value);
+            if (isNaN(dailyBudget) || dailyBudget <= 0) {
+                alert("Please enter a valid budget amount.");
+                return;
+            }
+            savings = dailyBudget - totalExpenses;
+            document.getElementById("budget-value").innerText = dailyBudget.toFixed(2);
+            document.getElementById("savings-value").innerText = savings.toFixed(2);
+            saveData();
+            updateChart();
+        }
+
+        // Add Expense
+        function addExpense() {
+            let expenseAmount = parseFloat(document.getElementById("expense-amount").value);
+            let expenseType = document.getElementById("expense-type").value;
+
+            if (isNaN(expenseAmount) || expenseAmount <= 0) {
+                alert("Please enter a valid expense amount.");
+                return;
+            }
+
+            let newTotalExpenses = totalExpenses + expenseAmount;
+
+            // Prevent expenses from exceeding budget
+            if (newTotalExpenses > dailyBudget) {
+                alert("Warning! You cannot add this expense as it exceeds your budget.");
+                return;
+            }
+
+            // Update total expenses and savings
+            totalExpenses = newTotalExpenses;
+            savings = dailyBudget - totalExpenses;
+
+            // Update category-specific expenses
+            expenseCategories[expenseType] += expenseAmount;
+
+            // Update UI
+            document.getElementById("total-expenses").innerText = totalExpenses.toFixed(2);
+            document.getElementById("savings-value").innerText = savings.toFixed(2);
+
+            saveData();
+            updateChart();
+        }
+
+        // Reset Dashboard
+        function resetDashboard() {
+            dailyBudget = 0;
+            totalExpenses = 0;
+            savings = 0;
+            expenseCategories = { Food: 0, Clothing: 0, Travelling: 0, Miscellaneous: 0 };
+
+            document.getElementById("daily-budget").value = "";
+            document.getElementById("expense-amount").value = "";
+            document.getElementById("budget-value").innerText = "0";
+            document.getElementById("total-expenses").innerText = "0";
+            document.getElementById("savings-value").innerText = "0";
+
+            localStorage.removeItem("dailyBudget");
+            localStorage.removeItem("totalExpenses");
+            localStorage.removeItem("expenseCategories");
+
+            updateChart();
+        }
+
+        // Initialize the chart on page load
+        window.onload = () => {
+            loadSavedData();
+            createChart();
+            updateChart();
+        };
+    </script>
