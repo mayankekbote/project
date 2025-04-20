@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports</title>
+    <link rel="stylesheet" href="/static/style2.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.26/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Reports</h1>
+        
+        <!-- Filter Dropdown -->
+        <select class="filter-dropdown" id="filter-dropdown">
+            <option value="all">All Records</option>
+            <option value="most-occurring">Most Occurring Expense Category</option>
+            <option value="high-expenses">Expenses ≥ 30% of Daily Budget</option>
+            <option value="cash">Cash Payments</option> 
+            <option value="card">Card Payments</option> 
+            <option value="upi">UPI Payments</option>   
+        </select>
+
+        <!-- Clear Reports Button -->
+        <button class="clear-button" onclick="clearReports()">Clear Records</button>
+
+        <table id="expense-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Amount</th>
+                    <th>Type</th>
+                    <th>Payment Method</th> <!-- New Column -->
+                    <th>Remaining Budget</th>
+                    <th>Timestamp</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Rows will be dynamically populated here -->
+            </tbody>
+        </table>
+    </div>
+
+    <button class="download-button" onclick="downloadReports()">Download Reports</button>
+
+    <script>
+        // Store all expenses globally for filtering
+        let allExpenses = [];
+
+        document.addEventListener("DOMContentLoaded", () => {
+            // Check if the user is logged in
+            fetch('/check_login', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === "error") {
+                    alert("You need to log in to view reports.");
+                    window.location.href = "/login"; // Redirect to login page
+                } else {
+                    // Fetch and populate expenses for the logged-in user
+                    fetchExpenses();
+                }
+            })
+            .catch(error => {
+                console.error("Error checking login status:", error);
+                alert("An error occurred. Please try again later.");
+            });
+
+            // Add event listener to the filter dropdown
+            document.getElementById("filter-dropdown").addEventListener("change", function() {
+                const filterValue = this.value;
+                applyFilter(filterValue);
+            });
+        });
+
+        // Function to fetch expenses for the logged-in user
+        function fetchExpenses() {
+            fetch('/get_expenses', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === "success") {
+                    allExpenses = data.expenses; // Store all expenses
+                    populateTable(allExpenses); // Populate table initially
+                } else {
+                    console.error("Failed to fetch expenses:", data.message);
+                    alert("Failed to fetch expenses. Please try again.");
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                alert("An error occurred while fetching expenses.");
+            });
+        }
+
+        // Function to populate the table
+        function populateTable(expenses) {
+            const tbody = document.querySelector("#expense-table tbody");
+            tbody.innerHTML = ""; // Clear existing rows
+
+            expenses.forEach(expense => {
+                const row = document.createElement("tr");
+
+                // Highlight budget update rows
+                if (expense.expense_type === "Budget Update") {
+                    row.classList.add("budget-update-row");
+                }
+
+                row.innerHTML = `
+                    <td>${expense.id}</td>
+                    <td>${expense.name}</td>
+                    <td>₹${expense.expense_amount.toFixed(2)}</td>
+                    <td>${expense.expense_type}</td>
+                    <td>${expense.payment_method || "N/A"}</td> <!-- New Column -->
+                    <td>₹${expense.remaining_budget.toFixed(2)}</td>
+                    <td>${expense.timestamp}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Function to apply filters
+        function applyFilter(filter) {
+    let filteredExpenses = [];
+
+    switch (filter) {
+        case "all":
+            filteredExpenses = allExpenses; // Show all expenses
+            break;
+
+        case "most-occurring":
+            // Find the most occurring expense category
+            const categoryCounts = {};
+            allExpenses.forEach(expense => {
+                if (!categoryCounts[expense.expense_type]) {
+                    categoryCounts[expense.expense_type] = 0;
+                }
+                categoryCounts[expense.expense_type]++;
+            });
+
+            const mostOccurringCategory = Object.keys(categoryCounts).reduce((a, b) =>
+                categoryCounts[a] > categoryCounts[b] ? a : b
+            );
+
+            filteredExpenses = allExpenses.filter(expense =>
+                expense.expense_type === mostOccurringCategory
+            );
+            break;
+
+        case "high-expenses":
+            // Exclude "Budget Update" entries when calculating the daily budget
+            const validExpenses = allExpenses.filter(expense => expense.expense_type !== "Budget Update");
+            
+            // Calculate the daily budget based on remaining budget and expense amount
+            const dailyBudget = Math.max(...validExpenses.map(expense => expense.remaining_budget + expense.expense_amount));
+
+            // Filter expenses that are 30% or more of the daily budget
+            filteredExpenses = validExpenses.filter(expense =>
+                expense.expense_amount >= 0.3 * dailyBudget
+            );
+            break;
+
+        case "cash":
+            // Filter expenses with payment method "Cash"
+            filteredExpenses = allExpenses.filter(expense =>
+                expense.payment_method === "Cash"
+            );
+            break;
+
+        case "card":
+            // Filter expenses with payment method "Card"
+            filteredExpenses = allExpenses.filter(expense =>
+                expense.payment_method === "Card"
+            );
+            break;
+
+        case "upi":
+            // Filter expenses with payment method "UPI"
+            filteredExpenses = allExpenses.filter(expense =>
+                expense.payment_method === "UPI"
+            );
+            break;
+
+        default:
+            filteredExpenses = allExpenses; // Default to showing all expenses
+    }
+
+    populateTable(filteredExpenses); // Populate the table with filtered data
+}
+
+        // Clear Reports Function
+        function clearReports() {
+            fetch('/clear_expenses', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === "success") {
+                    const tbody = document.querySelector("#expense-table tbody");
+                    tbody.innerHTML = ""; // Clear all rows in the table
+                    alert("Reports cleared successfully!");
+                } else {
+                    console.error("Failed to clear reports:", data.message);
+                    alert("Failed to clear reports. Please try again.");
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                alert("An error occurred while clearing reports.");
+            });
+        }
+
+        // Function to download reports as a PDF
+        function downloadReports() {
+    // Create a new jsPDF instance
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    // Get the table element
+    const table = document.getElementById("expense-table");
+
+    // Convert the table to an array of rows
+    const rows = [];
+    const headers = Array.from(table.querySelectorAll("thead th")).map(th => th.innerText);
+    rows.push(headers); // Add headers to the rows array
+
+    const tbodyRows = table.querySelectorAll("tbody tr");
+    tbodyRows.forEach(row => {
+        const rowData = Array.from(row.querySelectorAll("td")).map(td => td.innerText);
+        rows.push(rowData); // Add each row's data to the rows array
+    });
+
+    // Define column widths for the PDF
+    const columnWidths = [10, 30, 30, 40, 20, 30, 50]; // Increased width for Type column
+
+    // Add the table to the PDF
+    doc.autoTable({
+        head: [headers], // Table headers
+        body: rows.slice(1), // Table rows (excluding headers)
+        startY: 20, // Start position for the table
+        columnStyles: {
+            0: { cellWidth: columnWidths[0] }, // ID column
+            1: { cellWidth: columnWidths[1] }, // Name column
+            2: { cellWidth: columnWidths[2] }, // Amount column
+            3: { cellWidth: columnWidths[3] }, // Type column (Increased width)
+            4: { cellWidth: columnWidths[4] }, // Payment Method column
+            5: { cellWidth: columnWidths[5] }, // Remaining Budget column
+            6: { cellWidth: columnWidths[6] }  // Timestamp column
+        },
+        styles: {
+            fontSize: 8, // Font size for the table
+            cellPadding: 2 // Padding inside cells
+        }
+    });
+
+    // Save the PDF with a filename
+    doc.save("expense-reports.pdf");
+}
+    </script>
+</body>
+</html>
