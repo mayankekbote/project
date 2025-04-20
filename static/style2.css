@@ -1,0 +1,92 @@
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f9fc;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+            overflow: hidden; /* Ensures child elements are fully visible */
+            position: relative; /* Required for absolute positioning of the filter */
+        }
+        h1 {
+            text-align: center;
+            color: #0078a6;
+            font-size: 28px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #e3f2fd;
+        }
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+        /* Clear Reports Button Styles */
+        .clear-button {
+            display: block;
+            margin: 20px auto;
+            padding: 10px 20px;
+            background-color: #d9534f;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+        .clear-button:hover {
+            background-color: #c9302c;
+        }
+        .clear-button:active {
+            background-color: #a32020;
+        }
+        /* Filter Dropdown Styles */
+        .filter-dropdown {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 5px 10px;
+            background-color: #e3f2fd;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .budget-update-row {
+            background-color: #e6ffe6; /* Light green color */
+        }
+        .download-button {
+            display: block;
+            margin: 20px auto;
+            padding: 10px 20px;
+            background-color: #28a745; /* Green */
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+        
+        .download-button:hover {
+            background-color: #218838;
+        }
+        
+        .download-button:active {
+            background-color: #1c7430;
+        }

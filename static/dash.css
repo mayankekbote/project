@@ -1,0 +1,201 @@
+/* General Styles */
+html, body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f9fc;
+    margin: 0;
+    padding: 0;
+    height: 100%; /* Ensure full height */
+}
+
+body {
+    display: flex;
+    flex-direction: column; /* Stack content vertically */
+}
+
+/* Profile Section */
+.profile {
+    position: absolute; /* Positioning the profile icon */
+    top: 20px; /* Adjust this value to set the vertical position */
+    right: 20px; /* Adjust this value to set the horizontal position */
+}
+
+.profile-img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #68cce5;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 18px;
+    color: white;
+    cursor: pointer;
+}
+
+.profile-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background-color: #fff;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    min-width: 160px;
+    z-index: 100;
+}
+
+.profile-menu a {
+    display: block;
+    padding: 10px;
+    color: #0078a6;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+/* Container for Dashboard */
+.container {
+    flex: 1; /* Take up remaining vertical space */
+    display: grid; /* Use CSS Grid for layout */
+    grid-template-columns: 25% 45% 1fr; /* Three columns: 25%, 45%, remaining width */
+    gap: 20px; /* Space between sections */
+    margin: 20px;
+    padding: 20px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+    overflow: hidden; /* Prevent overflow issues */
+}
+
+/* Header Section */
+.header {
+    grid-column: span 3; /* Span across all columns */
+    text-align: center;
+    color: #0078a6;
+    font-size: 28px;
+    margin-bottom: 20px;
+}
+
+/* Left Column */
+.left-column {
+    grid-column: 1; /* First column */
+    display: flex;
+    flex-direction: column;
+    gap: 20px; /* Space between sections */
+    overflow-y: auto; /* Make left column scrollable */
+    padding: 15px;
+    border-radius: 10px;
+    background: #e3f2fd;
+    box-shadow: 0 3px 6px rgba(0, 120, 166, 0.15);
+}
+
+/* Middle Column (Chart) */
+.chart-container {
+    grid-column: 2; /* Second column */
+    padding: 15px;
+    border-radius: 10px;
+    background: #e3f2fd;
+    box-shadow: 0 3px 6px rgba(0, 120, 166, 0.15);
+    overflow: hidden; /* Ensure no scrolling in the chart section */
+    position: relative; /* Fix the chart's position */
+}
+
+#savingsChart {
+    width: 100%; /* Ensure chart fills the container */
+    height: 100%; /* Ensure chart uses full height */
+}
+
+/* Right Column (Savings Summary) */
+.right-column {
+    grid-column: 3; /* Third column */
+    padding: 15px;
+    border-radius: 10px;
+    background: #e3f2fd;
+    box-shadow: 0 3px 6px rgba(0, 120, 166, 0.15);
+    overflow-y: auto; /* Allow scrolling if content overflows */
+}
+
+/* Individual Sections in Left Column */
+.budget-section,
+.expense-section {
+    padding: 15px;
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Input Fields and Buttons */
+label {
+    display: block;
+    margin-top: 10px;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #0078a6;
+}
+
+input[type="number"],
+select {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 16px;
+    box-sizing: border-box;
+}
+
+button {
+    width: 100%;
+    background-color: #0078a6;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #005f80;
+}
+
+button:active {
+    background-color: #004e68;
+}
+
+.reset-button {
+    background-color: #d9534f;
+}
+
+.reset-button:hover {
+    background-color: #c9302c;
+}
+
+.reset-button:active {
+    background-color: #a32020;
+}
+
+/* View Reports Button Styles */
+.view-reports-button {
+    display: block;
+    margin-top: 10px;
+    padding: 10px 15px;
+    background-color: #0078a6; /* Blue color */
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    text-align: center;
+    text-decoration: none;
+    transition: background-color 0.3s ease;
+}
+
+.view-reports-button:hover {
+    background-color: #005f80; /* Darker blue on hover */
+}
+
+.view-reports-button:active {
+    background-color: #004e68; /* Even darker blue when clicked */
+}
