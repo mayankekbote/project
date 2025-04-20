@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f9fc;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+            overflow: hidden; /* Ensures child elements are fully visible */
+            position: relative; /* Required for absolute positioning of the filter */
+        }
+        h1 {
+            text-align: center;
+            color: #0078a6;
+            font-size: 28px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #e3f2fd;
+        }
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+        /* Clear Reports Button Styles */
+        .clear-button {
+            display: block;
+            margin: 20px auto;
+            padding: 10px 20px;
+            background-color: #d9534f;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+        .clear-button:hover {
+            background-color: #c9302c;
+        }
+        .clear-button:active {
+            background-color: #a32020;
+        }
+        /* Filter Dropdown Styles */
+        .filter-dropdown {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 5px 10px;
+            background-color: #e3f2fd;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .budget-update-row {
+            background-color: #e6ffe6; /* Light green color */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Reports</h1>
+        
+        <!-- Filter Dropdown -->
+        <select class="filter-dropdown" id="filter-dropdown">
+            <option value="all">All Records</option>
+            <option value="most-occurring">Most Occurring Expense Category</option>
+            <option value="high-expenses">Expenses ≥ 30% of Daily Budget</option>
+        </select>
+
+        <!-- Clear Reports Button -->
+        <button class="clear-button" onclick="clearReports()">Clear Records</button>
+
+        <table id="expense-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Amount</th>
+                    <th>Type</th>
+                    <th>Remaining Budget</th>
+                    <th>Timestamp</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Rows will be dynamically populated here -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // Store all expenses globally for filtering
+        let allExpenses = [];
+
+        document.addEventListener("DOMContentLoaded", () => {
+            fetch('/get_expenses', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === "success") {
+                    allExpenses = data.expenses; // Store all expenses
+                    populateTable(allExpenses); // Populate table initially
+                } else {
+                    console.error("Failed to fetch expenses:", data.message);
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+            });
+
+            // Add event listener to the filter dropdown
+            document.getElementById("filter-dropdown").addEventListener("change", function() {
+                const filterValue = this.value;
+                applyFilter(filterValue);
+            });
+        });
+
+        // Function to populate the table
+        function populateTable(expenses) {
+            const tbody = document.querySelector("#expense-table tbody");
+            tbody.innerHTML = ""; // Clear existing rows
+
+            expenses.forEach(expense => {
+                const row = document.createElement("tr");
+
+                // Check if the expense type is "Budget Update"
+                if (expense.expense_type === "Budget Update") {
+                    row.classList.add("budget-update-row");
+                }
+
+                row.innerHTML = `
+                    <td>${expense.id}</td>
+                    <td>${expense.name}</td>
+                    <td>₹${expense.expense_amount.toFixed(2)}</td>
+                    <td>${expense.expense_type}</td>
+                    <td>₹${expense.remaining_budget.toFixed(2)}</td>
+                    <td>${expense.timestamp}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Function to apply filters
+        function applyFilter(filter) {
+            let filteredExpenses = [];
+
+            switch (filter) {
+                case "all":
+                    filteredExpenses = allExpenses; // Show all expenses
+                    break;
+
+                case "most-occurring":
+                    // Find the most occurring expense category
+                    const categoryCounts = {};
+                    allExpenses.forEach(expense => {
+                        if (!categoryCounts[expense.expense_type]) {
+                            categoryCounts[expense.expense_type] = 0;
+                        }
+                        categoryCounts[expense.expense_type]++;
+                    });
+
+                    const mostOccurringCategory = Object.keys(categoryCounts).reduce((a, b) =>
+                        categoryCounts[a] > categoryCounts[b] ? a : b
+                    );
+
+                    filteredExpenses = allExpenses.filter(expense =>
+                        expense.expense_type === mostOccurringCategory
+                    );
+                    break;
+
+                case "high-expenses":
+                    // Exclude "Budget Update" entries when calculating the daily budget
+                    const validExpenses = allExpenses.filter(expense => expense.expense_type !== "Budget Update");
+                    
+                    // Calculate the daily budget based on remaining budget and expense amount
+                    const dailyBudget = Math.max(...validExpenses.map(expense => expense.remaining_budget + expense.expense_amount));
+
+                    // Filter expenses that are 30% or more of the daily budget
+                    filteredExpenses = validExpenses.filter(expense =>
+                        expense.expense_amount >= 0.3 * dailyBudget
+                    );
+                    break;
+
+                default:
+                    filteredExpenses = allExpenses; // Default to showing all expenses
+            }
+
+            populateTable(filteredExpenses); // Populate the table with filtered data
+        }
+
+        // Clear Reports Function
+        function clearReports() {
+            fetch('/clear_expenses', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === "success") {
+                    const tbody = document.querySelector("#expense-table tbody");
+                    tbody.innerHTML = ""; // Clear all rows in the table
+                    alert("Reports cleared successfully!");
+                } else {
+                    console.error("Failed to clear reports:", data.message);
+                    alert("Failed to clear reports. Please try again.");
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                alert("An error occurred while clearing reports.");
+            });
+        }
+    </script>
+</body>
+</html>

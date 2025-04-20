@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login to FinanceO</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+
+<form id="loginForm">
+    <button class="cancel-btn" type="button" onclick="window.location.href='/landing';">✖</button>
+    
+    <h2>Login</h2>
+
+    <label for="username">Username</label>
+    <input type="text" id="username" name="username" placeholder="Enter your username" required>
+
+    <label for="password">Password</label>
+    <input type="password" id="password" name="password" placeholder="Enter your password" required>
+
+    <input type="submit" value="Login">
+    <a href="#">Forgot Password?</a>
+
+    <p id="message" style="color: red;"></p>
+</form>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        document.getElementById("loginForm").addEventListener("submit", async function(event) {
+            event.preventDefault();  // Prevent page reload
+    
+            let username = document.getElementById("username").value;
+            let password = document.getElementById("password").value;
+    
+            console.log("Sending login request with:", { username, password }); // Debugging
+    
+            let response = await fetch("/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username, password })
+            });
+    
+            let result = await response.json();
+            console.log("Response from server:", result); // Debugging
+    
+            if (result.status === "success") {
+                // Store the username in sessionStorage
+                sessionStorage.setItem("currentUser", username);
+
+                // Redirect to the dashboard
+                window.location.href = "/dashboard";
+            } else {
+                // Display error message
+                document.getElementById("message").textContent = result.message || "Login failed. Please try again.";
+            }
+        });
+    });
+</script>
+
+</body>
+</html>
