@@ -1,0 +1,344 @@
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>FinanceO Dashboard</title>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <link rel="stylesheet" href="/static/dash.css">
+    </head>
+    <body>
+        <!-- Profile section in top-right corner -->
+        <div class="profile">
+            <div class="profile-img" onclick="toggleMenu()">
+                <span>U</span> <!-- Placeholder for user profile image or initials -->
+            </div>
+            <div class="profile-menu" id="profile-menu">
+                <a href="{{ url_for('login') }}">Logout</a>
+            </div>
+        </div>
+
+        <div class="container">
+            <!-- Header -->
+            <div class="header">FinanceO Dashboard</div>
+        
+            <!-- Left Column -->
+            <div class="left-column">
+                <!-- Budget Input -->
+                <div class="budget-section">
+                    <label for="daily-budget">Set Daily Budget:</label>
+                    <input type="number" id="daily-budget" placeholder="Enter budget amount" min="0">
+                    <button onclick="setBudget()">Set Budget</button>
+                </div>
+        
+                <!-- Expense Input -->
+                <div class="expense-section">
+                    <h2>Add Expense</h2>
+                    <label for="expense-amount">Amount:</label>
+                    <input type="number" id="expense-amount" placeholder="Enter amount" min="0">
+                    <label for="expense-type">Type:</label>
+                    <select id="expense-type">
+                        <option value="Food">Food</option>
+                        <option value="Clothing">Clothing</option>
+                        <option value="Travelling">Travelling</option>
+                        <option value="Miscellaneous">Miscellaneous</option>
+                        <option value="Insurance">Insurance</option>
+                        <option value="Grocery">Grocery</option>
+                        <option value="Healthcare">Healthcare</option>
+                        <option value="Stationery">Stationery</option>
+                    </select>
+                    <label for="payment-method">Payment Method:</label>
+                    <select id="payment-method">
+                        <option value="Cash">Cash</option>
+                        <option value="Card">Card</option>
+                        <option value="UPI">UPI</option>
+                    </select>
+                    <button onclick="addExpense()">Add Expense</button>
+                </div>
+            </div>
+        
+            <!-- Middle Column (Chart) -->
+            <div class="chart-container">
+                <canvas id="savingsChart"></canvas>
+            </div>
+        
+            <!-- Right Column (Savings Summary) -->
+            <div class="right-column">
+                <h2>Savings Summary</h2>
+                <p>Budget: ₹<span id="budget-value">0</span></p>
+                <p>Total Expenses: ₹<span id="total-expenses">0</span></p>
+                <p>Savings: ₹<span id="savings-value">0</span></p>
+                <button class="reset-button" onclick="resetDashboard()">Reset Dashboard</button>
+                <button class="view-reports-button" onclick="location.href='{{ url_for('reports') }}'">View Reports</button>
+            </div>
+        </div>  
+        <script>
+            let dailyBudget = 0;
+            let totalExpenses = 0;
+            let savings = 0;
+            let expenseCategories = {
+                Food: 0,
+                Clothing: 0,
+                Travelling: 0,
+                Miscellaneous: 0,
+                Insurance: 0,
+                Grocery: 0,
+                Healthcare: 0,
+                Stationery: 0
+            };
+            let savingsChart;
+        
+            // Expense type colors
+            const categoryColors = {
+                "Food": "#ff6384",       // Red
+                "Clothing": "#36a2eb",   // Blue
+                "Travelling": "#ffce56", // Yellow
+                "Miscellaneous": "#4bc0c0", // Teal
+                "Insurance": "#9c27b0",  // Purple
+                "Grocery": "#ff9800",    // Orange
+                "Healthcare": "#00bcd4", // Cyan
+                "Stationery": "#8bc34a"  // Green
+            };
+        
+            // Fetch dashboard data from the backend
+            function fetchDashboardData() {
+                fetch('/get_dashboard_data', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === "success") {
+                        const dashboardData = data.data;
+        
+                        // Update global variables
+                        dailyBudget = dashboardData.daily_budget;
+                        totalExpenses = dashboardData.total_expenses;
+                        savings = dashboardData.savings;
+                        expenseCategories = dashboardData.expense_categories;
+        
+                        // Update the UI
+                        document.getElementById("budget-value").innerText = dailyBudget.toFixed(2);
+                        document.getElementById("total-expenses").innerText = totalExpenses.toFixed(2);
+                        document.getElementById("savings-value").innerText = savings.toFixed(2);
+        
+                        // Initialize or update the chart
+                        if (!savingsChart) {
+                            createChart();
+                        } else {
+                            updateChart();
+                        }
+                    } else {
+                        console.error("Failed to fetch dashboard data:", data.message);
+                        alert("Failed to load dashboard data. Please try again.");
+                    }
+                })
+                .catch(error => {
+                    console.error("Error:", error);
+                    alert("An error occurred while loading dashboard data.");
+                });
+            }
+        
+            // Initialize Pie Chart
+            function createChart() {
+                const ctx = document.getElementById("savingsChart").getContext("2d");
+                savingsChart = new Chart(ctx, {
+                    type: "pie",
+                    data: {
+                        labels: ["Savings", "Food", "Clothing", "Travelling", "Miscellaneous", "Insurance", "Grocery", "Healthcare", "Stationery"],
+                        datasets: [{
+                            data: [
+                                savings,
+                                expenseCategories.Food,
+                                expenseCategories.Clothing,
+                                expenseCategories.Travelling,
+                                expenseCategories.Miscellaneous,
+                                expenseCategories.Insurance,
+                                expenseCategories.Grocery,
+                                expenseCategories.Healthcare,
+                                expenseCategories.Stationery
+                            ],
+                            backgroundColor: [
+                                "#28a745", // Savings (Green)
+                                categoryColors.Food,
+                                categoryColors.Clothing,
+                                categoryColors.Travelling,
+                                categoryColors.Miscellaneous,
+                                categoryColors.Insurance,
+                                categoryColors.Grocery,
+                                categoryColors.Healthcare,
+                                categoryColors.Stationery
+                            ]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                            },
+                            tooltip: {
+                                enabled: true
+                            }
+                        }
+                    }
+                });
+            }
+        
+            // Update Chart
+            function updateChart() {
+                savingsChart.data.datasets[0].data = [
+                    savings,
+                    expenseCategories.Food,
+                    expenseCategories.Clothing,
+                    expenseCategories.Travelling,
+                    expenseCategories.Miscellaneous,
+                    expenseCategories.Insurance,
+                    expenseCategories.Grocery,
+                    expenseCategories.Healthcare,
+                    expenseCategories.Stationery
+                ];
+                savingsChart.update();
+            }
+        
+            // Set Budget
+           
+            function setBudget() {
+    let newBudget = parseFloat(document.getElementById("daily-budget").value);
+    if (isNaN(newBudget) || newBudget <= 0) {
+        alert("Please enter a valid budget amount.");
+        return;
+    }
+
+    if (newBudget <= dailyBudget) {
+        alert("The new budget must be higher than the current budget.");
+        return;
+    }
+
+    dailyBudget = newBudget;
+    savings = dailyBudget - totalExpenses;
+
+    document.getElementById("budget-value").innerText = dailyBudget.toFixed(2);
+    document.getElementById("savings-value").innerText = savings.toFixed(2);
+
+    fetch('/add_expense', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            expense_amount: dailyBudget, // Budget amount
+            expense_type: "Budget Update", // Type of expense
+            payment_method: "Budget Update", // Include payment method
+            remaining_budget: savings // Remaining budget after setting
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === "success") {
+            console.log("Budget updated successfully!");
+        } else {
+            console.error("Failed to update budget:", data.message);
+        }
+    })
+    .catch(error => {
+        console.error("Error:", error);
+    });
+
+    updateChart();
+} 
+            // Add Expense
+            function addExpense() {
+    let expenseAmount = parseFloat(document.getElementById("expense-amount").value);
+    let expenseType = document.getElementById("expense-type").value;
+    let paymentMethod = document.getElementById("payment-method").value; // Get payment method
+
+    if (isNaN(expenseAmount) || expenseAmount <= 0) {
+        alert("Please enter a valid expense amount.");
+        return;
+    }
+
+    let newTotalExpenses = totalExpenses + expenseAmount;
+    if (newTotalExpenses > dailyBudget) {
+        alert("Warning! You cannot add this expense as it exceeds your budget.");
+        return;
+    }
+
+    totalExpenses = newTotalExpenses;
+    savings = dailyBudget - totalExpenses;
+    expenseCategories[expenseType] += expenseAmount;
+
+    document.getElementById("total-expenses").innerText = totalExpenses.toFixed(2);
+    document.getElementById("savings-value").innerText = savings.toFixed(2);
+
+    fetch('/add_expense', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            expense_amount: expenseAmount,
+            expense_type: expenseType,
+            payment_method: paymentMethod, // Include payment method
+            remaining_budget: savings
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === "success") {
+            console.log("Expense added successfully!");
+        } else {
+            console.error("Failed to add expense:", data.message);
+        }
+    })
+    .catch(error => {
+        console.error("Error:", error);
+    });
+
+    updateChart();
+}
+        
+            // Handle profile menu toggle
+            function toggleMenu() {
+                const profileMenu = document.getElementById("profile-menu");
+                profileMenu.style.display = profileMenu.style.display === "block" ? "none" : "block";
+            }
+        
+            // Close profile menu when clicking outside
+            window.addEventListener("click", function(event) {
+                const profileMenu = document.getElementById("profile-menu");
+                const profileIcon = document.querySelector(".profile");
+                if (!profileIcon.contains(event.target)) {
+                    profileMenu.style.display = "none";
+                }
+            });
+        
+            // Initialize the dashboard on page load
+            window.onload = () => {
+                // Check if the user is logged in
+                fetch('/check_login', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === "error") {
+                        alert("You need to log in to view the dashboard.");
+                        window.location.href = "/login"; // Redirect to login page
+                    } else {
+                        // Fetch dashboard data for the logged-in user
+                        fetchDashboardData();
+                    }
+                })
+                .catch(error => {
+                    console.error("Error checking login status:", error);
+                    alert("An error occurred. Please try again later.");
+                });
+            };
+        </script>
+    </body>
+    </html>
